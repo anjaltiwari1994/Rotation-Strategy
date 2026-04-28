@@ -50,9 +50,53 @@ def fetch_stock_data(symbol):
     except:
         return None
 
+@st.cache_data(ttl=60)
+def fetch_data(symbol):
 
-# FIX FOR BENCHMARK ERROR
-# Replace your existing build_dashboard() function completely with this:
+    try:
+        df = yf.download(
+            symbol,
+            period="3mo",
+            interval="1d",
+            progress=False,
+            threads=False,
+            auto_adjust=False
+        )
+
+        if df.empty:
+            return None
+
+        # Flatten columns
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+
+        if "Close" not in df.columns:
+            return None
+
+        df = df[["Close"]].dropna()
+
+        if len(df) < 20:
+            return None
+
+        current_price = float(df["Close"].iloc[-1])
+
+        monthly = df.resample("ME").last()
+
+        if len(monthly) < 2:
+            return None
+
+        prev_month_close = float(monthly["Close"].iloc[-2])
+
+        monthly_return = ((current_price / prev_month_close) - 1) * 100
+
+        return {
+            "Current Price": round(current_price, 2),
+            "Prev Month Close": round(prev_month_close, 2),
+            "Monthly Return %": round(monthly_return, 2)
+        }
+
+    except:
+        return None
 
 def build_dashboard():
 
