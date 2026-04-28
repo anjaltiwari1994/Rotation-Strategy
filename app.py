@@ -187,7 +187,7 @@ def update_portfolio_prices(dashboard):
             st.session_state.portfolio.at[idx, "PnL %"] = round(pnl, 2)
 
 
-def execute_rebalance(dashboard, capital=50000):
+def execute_rebalance(dashboard, capital=30000):
     top5 = dashboard.head(TOP_N)
     allocation = capital / TOP_N
 
