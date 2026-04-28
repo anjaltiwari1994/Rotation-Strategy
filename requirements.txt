@@ -4,3 +4,6 @@ pandas
 plotly
 streamlit-autorefresh
 numpy
+matplotlib
+tabulate
+colorama
