@@ -51,23 +51,59 @@ def fetch_stock_data(symbol):
         return None
 
 
+# FIX FOR BENCHMARK ERROR
+# Replace your existing build_dashboard() function completely with this:
+
 def build_dashboard():
-    benchmark = fetch_stock_data(BENCHMARK)
+
+    benchmark = fetch_data(BENCHMARK)
+
+    if benchmark is None:
+        st.error("Benchmark data could not be fetched.")
+        st.stop()
+
+    # Safety conversion
+    benchmark_return = float(benchmark["Monthly Return %"])
+
     results = []
 
     for stock in NIFTY50:
-        data = fetch_stock_data(stock)
-        if not data:
+
+        data = fetch_data(stock)
+
+        if data is None:
             continue
-        rs = data["Monthly Return %"] - benchmark["Monthly Return %"]
-        results.append({
-            "Stock": stock.replace(".NS", ""),
-            "Current Price": data["Current Price"],
-            "Prev Month Close": data["Prev Month Close"],
-            "Stock Return %": data["Monthly Return %"],
-            "Benchmark Return %": benchmark["Monthly Return %"],
-            "RS Score": round(rs, 2)
-        })
+
+        try:
+            stock_return = float(data["Monthly Return %"])
+
+            rs = stock_return - benchmark_return
+
+            results.append({
+                "Stock": stock.replace(".NS", ""),
+                "Current Price": float(data["Current Price"]),
+                "Prev Month Close": float(data["Prev Month Close"]),
+                "Stock Return %": round(stock_return, 2),
+                "Benchmark Return %": round(benchmark_return, 2),
+                "RS Score": round(rs, 2)
+            })
+
+        except Exception:
+            continue
+
+    dashboard = pd.DataFrame(results)
+
+    if dashboard.empty:
+        st.error("No stock data available.")
+        st.stop()
+
+    dashboard.sort_values("RS Score", ascending=False, inplace=True)
+
+    dashboard["Rank"] = range(1, len(dashboard) + 1)
+
+    dashboard.reset_index(drop=True, inplace=True)
+
+    return dashboard, benchmark
 
     df = pd.DataFrame(results)
     df.sort_values("RS Score", ascending=False, inplace=True)
